@@ -1,0 +1,31 @@
+node_modules
+npm-debug.log
+build
+dist
+.git
+.gitignore
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.DS_Store
+*.log
+.vscode
+.idea
+coverage
+.nyc_output
+*.swp
+*.swo
+*~
+
+# Docker files (don't copy into Docker build context)
+Dockerfile
+Dockerfile.dev
+docker-compose.yml
+docker-compose.dev.yml
+.dockerignore
+
+# Backend database files
+backend/database/*.db
+backend/database/*.db-journal
+
