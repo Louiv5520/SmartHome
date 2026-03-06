@@ -67,9 +67,20 @@ function App() {
     const callback = params.get('callback');
     const code = params.get('code');
     const state = params.get('state');
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/c0aa36cd-fb3e-45b1-b2ca-e2c8d8d9e5cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:OAuth',message:'OAuth callback check',data:{callback,hasCode:!!code,hasState:!!state,stateValue:state,fullUrl:window.location.href,pathname:window.location.pathname},timestamp:Date.now(),hypothesisId:'H1,H5'})}).catch(()=>{});
+    // #endregion
+    if (callback === 'spotify' && !(code && state)) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/c0aa36cd-fb3e-45b1-b2ca-e2c8d8d9e5cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:spotifyIncomplete',message:'Spotify callback params incomplete',data:{callback,hasCode:!!code,hasState:!!state},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
+    }
     if (callback === 'spotify' && code && state) {
       integrationsAPI.spotifyCallback(state, code)
         .then((res) => {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/c0aa36cd-fb3e-45b1-b2ca-e2c8d8d9e5cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:spotifySuccess',message:'Spotify callback success',data:{hasAccessToken:!!res?.accessToken},timestamp:Date.now(),hypothesisId:'H2,H4'})}).catch(()=>{});
+          // #endregion
           if (res.accessToken) {
             setSpotifyToken(res.accessToken);
           }
@@ -77,6 +88,9 @@ function App() {
           window.location.reload();
         })
         .catch((err) => {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/c0aa36cd-fb3e-45b1-b2ca-e2c8d8d9e5cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:spotifyError',message:'Spotify callback failed',data:{errorMessage:err?.message,errorName:err?.name},timestamp:Date.now(),hypothesisId:'H2,H3'})}).catch(()=>{});
+          // #endregion
           console.error('Spotify callback fejl:', err);
           window.history.replaceState({}, document.title, window.location.pathname || '/');
         });

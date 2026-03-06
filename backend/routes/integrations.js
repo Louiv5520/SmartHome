@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const axios = require('axios');
+const fs = require('fs');
+const DEBUG_LOG = require('path').join(__dirname, '../../.cursor/debug.log');
 
 // Get Spotify access token for user (til playback) - skal være før /:userId
 router.get('/:userId/spotify/token', (req, res) => {
@@ -84,6 +86,9 @@ router.post('/:userId/spotify/callback', async (req, res) => {
   try {
     const { userId } = req.params;
     const { code } = req.body;
+    // #region agent log
+    try { fs.appendFileSync(DEBUG_LOG, JSON.stringify({location:'integrations.js:callbackEntry',message:'Spotify callback received',data:{userId,hasCode:!!code,codeLength:code?.length},timestamp:Date.now(),hypothesisId:'H2,H5'})+'\n'); } catch(_){}
+    // #endregion
     const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
     const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
     const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || `https://127.0.0.1:3000/opsætning?callback=spotify`;
@@ -110,6 +115,9 @@ router.post('/:userId/spotify/callback', async (req, res) => {
 
     const { access_token, refresh_token, expires_in } = tokenResponse.data;
     const expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
+    // #region agent log
+    try { fs.appendFileSync(DEBUG_LOG, JSON.stringify({location:'integrations.js:tokenExchange',message:'Spotify token exchange success',data:{userId},timestamp:Date.now(),hypothesisId:'H3'})+'\n'); } catch(_){}
+    // #endregion
 
     const database = db.getDb();
 
@@ -133,8 +141,10 @@ router.post('/:userId/spotify/callback', async (req, res) => {
             (err) => {
               if (err) {
                 console.error('Error updating Spotify integration:', err);
+                try { fs.appendFileSync(DEBUG_LOG, JSON.stringify({location:'integrations.js:dbUpdateError',message:'DB update failed',data:{userId,err:err.message},timestamp:Date.now(),hypothesisId:'H4'})+'\n'); } catch(_){}
                 return res.status(500).json({ error: 'Failed to update integration' });
               }
+              try { fs.appendFileSync(DEBUG_LOG, JSON.stringify({location:'integrations.js:dbSaveSuccess',message:'Spotify integration saved (update)',data:{userId},timestamp:Date.now(),hypothesisId:'H4'})+'\n'); } catch(_){}
               res.json({ success: true, message: 'Spotify connected successfully', accessToken: access_token });
             }
           );
@@ -147,8 +157,10 @@ router.post('/:userId/spotify/callback', async (req, res) => {
             (err) => {
               if (err) {
                 console.error('Error saving Spotify integration:', err);
+                try { fs.appendFileSync(DEBUG_LOG, JSON.stringify({location:'integrations.js:dbInsertError',message:'DB insert failed',data:{userId,err:err.message},timestamp:Date.now(),hypothesisId:'H4'})+'\n'); } catch(_){}
                 return res.status(500).json({ error: 'Failed to save integration' });
               }
+              try { fs.appendFileSync(DEBUG_LOG, JSON.stringify({location:'integrations.js:dbSaveSuccess',message:'Spotify integration saved (insert)',data:{userId},timestamp:Date.now(),hypothesisId:'H4'})+'\n'); } catch(_){}
               res.json({ success: true, message: 'Spotify connected successfully', accessToken: access_token });
             }
           );
@@ -156,6 +168,7 @@ router.post('/:userId/spotify/callback', async (req, res) => {
       }
     );
   } catch (error) {
+    try { fs.appendFileSync(DEBUG_LOG, JSON.stringify({location:'integrations.js:callbackError',message:'Spotify callback exception',data:{errorMessage:error.message,responseStatus:error.response?.status},timestamp:Date.now(),hypothesisId:'H2,H3'})+'\n'); } catch(_){}
     console.error('Spotify OAuth error:', error);
     res.status(500).json({ error: 'Failed to connect Spotify' });
   }
