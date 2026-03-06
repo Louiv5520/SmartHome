@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { integrationsAPI } from './utils/api';
 import { setSpotifyToken } from './utils/spotifyPlayer';
@@ -61,6 +61,7 @@ function App() {
   const [slideshowEnabled, setSlideshowEnabled] = useState(true);
   const [slideshowInterval, setSlideshowInterval] = useState(10);
 
+  const oauthCallbackStarted = useRef(false);
   // Håndter OAuth callback (Spotify, Google Calendar)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -75,7 +76,8 @@ function App() {
       fetch('http://127.0.0.1:7242/ingest/c0aa36cd-fb3e-45b1-b2ca-e2c8d8d9e5cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:spotifyIncomplete',message:'Spotify callback params incomplete',data:{callback,hasCode:!!code,hasState:!!state},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
       // #endregion
     }
-    if (callback === 'spotify' && code && state) {
+    if (callback === 'spotify' && code && state && !oauthCallbackStarted.current) {
+      oauthCallbackStarted.current = true;
       integrationsAPI.spotifyCallback(state, code)
         .then((res) => {
           // #region agent log

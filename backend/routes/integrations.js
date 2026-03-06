@@ -168,9 +168,14 @@ router.post('/:userId/spotify/callback', async (req, res) => {
       }
     );
   } catch (error) {
-    try { fs.appendFileSync(DEBUG_LOG, JSON.stringify({location:'integrations.js:callbackError',message:'Spotify callback exception',data:{errorMessage:error.message,responseStatus:error.response?.status},timestamp:Date.now(),hypothesisId:'H2,H3'})+'\n'); } catch(_){}
-    console.error('Spotify OAuth error:', error);
-    res.status(500).json({ error: 'Failed to connect Spotify' });
+    const spotifyError = error.response?.data;
+    const status = error.response?.status;
+    try { fs.appendFileSync(DEBUG_LOG, JSON.stringify({location:'integrations.js:callbackError',message:'Spotify callback exception',data:{errorMessage:error.message,responseStatus:status,spotifyError},timestamp:Date.now(),hypothesisId:'H2,H3'})+'\n'); } catch(_){}
+    console.error('Spotify OAuth error:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to connect Spotify',
+      details: spotifyError?.error_description || spotifyError?.error || error.message
+    });
   }
 });
 

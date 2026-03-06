@@ -23,7 +23,8 @@ const apiCall = async (endpoint, options = {}) => {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/c0aa36cd-fb3e-45b1-b2ca-e2c8d8d9e5cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.js:18',message:'API error response',data:{status:response.status,error,endpoint},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,E'})}).catch(()=>{});
       // #endregion
-      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      const msg = error.details ? `${error.error}: ${error.details}` : (error.error || `HTTP error! status: ${response.status}`);
+      throw new Error(msg);
     }
 
     const jsonData = await response.json();
