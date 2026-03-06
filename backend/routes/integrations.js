@@ -67,7 +67,7 @@ router.post('/:userId/spotify', (req, res) => {
       return res.status(400).json({ error: 'Spotify Client ID not configured' });
     }
 
-    const scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';
+    const scopes = 'streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state user-read-currently-playing';
     const authUrl = `https://accounts.spotify.com/authorize?` +
       `client_id=${SPOTIFY_CLIENT_ID}&` +
       `response_type=code&` +

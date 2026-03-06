@@ -55,6 +55,17 @@ async function getCachedAppToken() {
   return appTokenCache;
 }
 
+function deleteCacheKey(cacheKey) {
+  const database = db.getDb();
+  database.run(
+    'DELETE FROM music_cache WHERE cache_key = ?',
+    [cacheKey],
+    (err) => {
+      if (err) console.error('Cache delete error:', err);
+    }
+  );
+}
+
 async function makeSpotifyRequest(endpoint, options = {}) {
   const token = await getCachedAppToken();
   const url = endpoint.startsWith('http') ? endpoint : `${SPOTIFY_API_BASE_URL}${endpoint}`;
@@ -79,7 +90,18 @@ function getCachedData(cacheKey) {
       [cacheKey],
       (err, cached) => {
         if (err) return reject(err);
-        resolve(cached ? JSON.parse(cached.data) : null);
+        if (!cached) {
+          resolve(null);
+          return;
+        }
+
+        try {
+          resolve(JSON.parse(cached.data));
+        } catch (parseError) {
+          console.error(`Invalid cached music data for ${cacheKey}:`, parseError);
+          deleteCacheKey(cacheKey);
+          resolve(null);
+        }
       }
     );
   });
@@ -155,7 +177,10 @@ router.get('/search', async (req, res) => {
     res.json(formattedData);
   } catch (error) {
     console.error('Search error:', error);
-    res.status(500).json({ error: 'Failed to search music' });
+    res.status(error.response?.status || 500).json({
+      error: 'Failed to search music',
+      details: error.response?.data?.error?.message || error.response?.data?.error_description || error.message
+    });
   }
 });
 
